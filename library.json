@@ -1,0 +1,23 @@
+[
+    {
+        "title": "wisdom",
+        "author": "muniba",
+        "year": 2025,
+        "genre": "knowledge",
+        "read_status": true
+    },
+    {
+        "title": "learn python",
+        "author": "muniba",
+        "year": 2025,
+        "genre": "coding",
+        "read_status": true
+    },
+    {
+        "title": "learn nextjs",
+        "author": "muniba",
+        "year": 2025,
+        "genre": "coding",
+        "read_status": false
+    }
+]
