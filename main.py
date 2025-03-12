@@ -16,7 +16,7 @@ def save_library(library):
 # initialize library
 library = load_library()
 st.title('📖 Personal Library Manager')
-menu = st.sidebar.radio('select an option',['📚View library','➕📗Add Book','➖📕Remove Book','🔎📘Search Book','🗃️📤Save and exit','📖View All Books'])
+menu = st.sidebar.radio('select an option',['📚View library','➕📗Add Book','➖📕Remove Book','🔎📘Search Book','🗃️📤Save and exit'])
 if menu=='📚View library':
     st.sidebar.header('📚your library')
     if library:
@@ -62,13 +62,7 @@ elif menu == '🔎📘Search Book':
         else:
             st.warning('No book found!')
 
-# View All Books
-elif menu == '📖View All Books':
-    st.sidebar.header('📖 All Books in Your Library')
-    if library:
-        st.table(library)
-    else:
-        st.write('📚 No books in your library')
+
 # save and exit
 elif menu == '🗃️📤Save and exit':
     save_library(library)

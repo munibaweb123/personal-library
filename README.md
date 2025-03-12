@@ -14,9 +14,9 @@
 - Users can view the current library, which displays all the books added so far.
 - The library will show the title, author, year, genre, and read status of each book.
 
-### 4. View All Books
-- Users can view all books in their library in a tabular format.
-- If there are no books in the library, a message will indicate that the library is empty.
+### 4. Search Library
+- Users can search book in a library with respect to its title.
+- if the book is not in library show no book found.
 
 ### 5. Save and Exit
 - Users can save their library to a JSON file and exit the application.
