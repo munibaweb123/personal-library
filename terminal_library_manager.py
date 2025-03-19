@@ -47,6 +47,7 @@ def main():
             title = input("Enter the title of the book to remove: ")
             library = [book for book in library if book['title'] != title]
             print("Book removed successfully!")
+           
 
         elif choice == '3':
             if library:

@@ -1,69 +1,147 @@
 import streamlit as st
-import json
+import sqlite3
 
-# load and save library
+# Initialize database
+def init_db():
+    conn = sqlite3.connect("library.db")
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS books (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            author TEXT NOT NULL,
+            year INTEGER NOT NULL,
+            genre TEXT NOT NULL,
+            read_status BOOLEAN NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Load books from the database
 def load_library():
-    try:
-        with open('library.json','r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return []
-    
-def save_library(library):
-    with open('library.json','w') as file:
-        json.dump(library,file,indent=4)
+    conn = sqlite3.connect("library.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM books")
+    books = cursor.fetchall()
+    conn.close()
+    return books
 
-# initialize library
-library = load_library()
+# Add book to the database
+def add_book(title, author, year, genre, read_status):
+    conn = sqlite3.connect("library.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO books (title, author, year, genre, read_status) VALUES (?, ?, ?, ?, ?)",
+                   (title, author, year, genre, read_status))
+    conn.commit()
+    conn.close()
+
+# Remove book from the database
+def remove_book(book_id):
+    conn = sqlite3.connect("library.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM books WHERE id = ?", (book_id,))
+    conn.commit()
+    conn.close()
+
+# Search books in the database
+def search_books(query):
+    conn = sqlite3.connect("library.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM books WHERE title LIKE ? OR author LIKE ?", ('%'+query+'%', '%'+query+'%'))
+    books = cursor.fetchall()
+    conn.close()
+    return books
+
+# Update book details
+def update_book(book_id, title, author, year, genre, read_status):
+    conn = sqlite3.connect("library.db")
+    cursor = conn.cursor()
+    cursor.execute("UPDATE books SET title = ?, author = ?, year = ?, genre = ?, read_status = ? WHERE id = ?",
+                   (title, author, year, genre, read_status, book_id))
+    conn.commit()
+    conn.close()
+
+# Initialize database
+init_db()
+
 st.title('📖 Personal Library Manager')
-menu = st.sidebar.radio('select an option',['📚View library','➕📗Add Book','➖📕Remove Book','🔎📘Search Book','🗃️📤Save and exit'])
-if menu=='📚View library':
-    st.sidebar.header('📚your library')
-    if library:
-        st.table(library)
+menu = st.sidebar.radio('Select an option', ['📚 View Library', '➕ Add Book', '➖ Remove Book', '🔎 Search Book', '✏️ Update Book', '🗃️ Save & Exit'])
+
+# View Library
+if menu == '📚 View Library':
+    st.sidebar.header('📚 Your Library')
+    books = load_library()
+    if books:
+        st.table(books)
     else:
-        st.write('📚no book in your library')
+        st.write('📚 No books in your library')
+
 # Add Book
-elif menu == '➕📗Add Book':
+elif menu == '➕ Add Book':
     st.sidebar.header('Add a new book')
     title = st.text_input('Title')
     author = st.text_input('Author')
-    year = st.number_input('year',min_value=2000,max_value=2050,step=1)
+    year = st.number_input('Year', min_value=2000, max_value=2050, step=1)
     genre = st.text_input('Genre')
-    read_status = st.checkbox('mark as read')
-    if(st.button('➕Add Book')):
-        library.append({'title':title,'author':author,'year':year,'genre':genre,'read_status':read_status})
-        save_library(library)
-        st.success('book added successfully!')
+    read_status = st.checkbox('Mark as read')
+
+    if st.button('➕ Add Book'):
+        add_book(title, author, year, genre, read_status)
+        st.success('✅ Book added successfully!')
         st.rerun()
+
 # Remove Book
-elif menu == '➖📕Remove Book':
-    st.sidebar.header('remove a book')
-    book_title=[book['title'] for book in library]
-    if book_title:
-        selected_book = st.selectbox('select a book to remove',book_title)
-        if st.button('➖Remove Book'):
-            library = [book for book in library if book['title']!=selected_book]
-            save_library(library)
-            st.success('book removed successfully!')
+elif menu == '➖ Remove Book':
+    st.sidebar.header('Remove a book')
+    books = load_library()
+    if books:
+        book_dict = {f"{book[1]} by {book[2]}": book[0] for book in books}
+        selected_book = st.selectbox('Select a book to remove', list(book_dict.keys()))
+        if st.button('➖ Remove Book'):
+            remove_book(book_dict[selected_book])
+            st.success('✅ Book removed successfully!')
             st.rerun()
-        else:
-            if not book_title:
-                st.warning('No book in your library, Add some books!')
+    else:
+        st.warning('No books in your library!')
 
 # Search Book
-elif menu == '🔎📘Search Book':
+elif menu == '🔎 Search Book':
     st.sidebar.header('Search a book')
     search_term = st.text_input('Enter title or author name')
-    if st.button('Search'):
-        results = [book for book in library if search_term.lower() in book['title'].lower() or search_term.lower() in book['author'].lower()]
+    if st.button('🔍 Search'):
+        results = search_books(search_term)
         if results:
             st.table(results)
         else:
-            st.warning('No book found!')
+            st.warning('⚠️ No books found!')
 
+# Update Book
+elif menu == '✏️ Update Book':
+    st.sidebar.header('Update Book Details')
+    books = load_library()
+    if books:
+        book_dict = {f"{book[1]} by {book[2]}": book[0] for book in books}
+        selected_book = st.selectbox('Select a book to update', list(book_dict.keys()))
 
-# save and exit
-elif menu == '🗃️📤Save and exit':
-    save_library(library)
-    st.success('🗃️Library saved successfully!')
+        # Get book details
+        book_id = book_dict[selected_book]
+        book_details = [book for book in books if book[0] == book_id][0]
+
+        # Update inputs
+        title = st.text_input('Title', value=book_details[1])
+        author = st.text_input('Author', value=book_details[2])
+        year = st.number_input('Year', min_value=2000, max_value=2050, step=1, value=book_details[3])
+        genre = st.text_input('Genre', value=book_details[4])
+        read_status = st.checkbox('Mark as read', value=bool(book_details[5]))
+
+        if st.button('✏️ Update Book'):
+            update_book(book_id, title, author, year, genre, read_status)
+            st.success('✅ Book updated successfully!')
+            st.rerun()
+    else:
+        st.warning('⚠️ No books in your library!')
+
+# Save and Exit
+elif menu == '🗃️ Save & Exit':
+    st.success('🗃️ Library saved successfully!')
